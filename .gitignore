@@ -2,3 +2,6 @@ datasets
 *.npy 
 *.fif
 preprocessed_data
+nengo-dl
+keras-lmu
+keras-spiking
