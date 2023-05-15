@@ -9,10 +9,28 @@ import pandas as pd
 import tempfile
 import scipy.signal as signal
 import io, base64, os
+import pickle 
+import tensorflow.keras as keras
+import tensorflow as tf
+from keras.models import Sequential
+from keras.layers import Dense, LSTM, BatchNormalization, Dropout
+from keras_lmu import LMU
 import matplotlib.pyplot as plt
 plt.switch_backend('Agg') 
 
 csp_filters = np.load('/Users/anushmutyala/Documents/GitHub/Energy-Efficient-Decoding-of-EEG-Motor-Imagery-using-Spiking-Legendre-Memory-Units/ml/preprocessed_data/csp_filters.npy')
+with open('/Users/anushmutyala/Documents/GitHub/Energy-Efficient-Decoding-of-EEG-Motor-Imagery-using-Spiking-Legendre-Memory-Units/ml/preprocessed_data/scaler.pkl','rb') as f:
+    sc = pickle.load(f)
+
+keras_lmu = keras.models.load_model('/Users/anushmutyala/Documents/GitHub/Energy-Efficient-Decoding-of-EEG-Motor-Imagery-using-Spiking-Legendre-Memory-Units/ml/models/keras-lmu')
+
+def inference(data, freqs):
+    data = data[:, :, np.logical_and(freqs >= 8, freqs <= 30), :]
+    data = np.moveaxis(data.reshape(data.shape[0], -1, data.shape[-1]), 2, 1)
+    normed_data = sc.transform(data.reshape((data.shape[0]*data.shape[1],data.shape[2]))).reshape((data.shape[0],data.shape[1],data.shape[2]))
+    y_pred = keras_lmu.predict(normed_data)
+    y_pred = (y_pred>0.5).astype(int)
+    return y_pred
 
 def preprocess(file):
     with tempfile.NamedTemporaryFile(suffix=".edf", delete=True) as temp:

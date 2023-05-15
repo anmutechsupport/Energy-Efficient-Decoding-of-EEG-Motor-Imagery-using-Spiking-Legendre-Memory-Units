@@ -12,6 +12,7 @@ function App() {
   const [trueLabel, setTrueLabel] = useState(null);
   const [predLabel, setPredLabel] = useState(null);
   const [CSPWin, setCSPWin] = useState(null);
+  const [accuracy, setAccuracy] = useState(0);
   const formRef = useRef(null);
 
   const getSpectro = async () => {
@@ -25,6 +26,25 @@ function App() {
     console.log(response);
     setSpectroImg(response.data);
     return "pass";
+  };
+
+  const calcAccuracy = (sampleIdx) => {
+    // take all true labels and predicted labels from state vars up until sampleIdx and calculate accuracy
+    // set accuracy to the calculated accuracy
+
+    const trueLabels = procJson.true_labels.slice(0, sampleIdx + 1);
+    const predLabels = procJson.pred_labels.slice(0, sampleIdx + 1);
+    let correct = 0;
+    for (let i = 0; i < trueLabels.length; i++) {
+      if (trueLabels[i] == predLabels[i]) {
+        correct++;
+      }
+    }
+    // if trueLabels.length == 0, set accuracy to 0
+
+    if (trueLabels.length == 0) {
+      setAccuracy(0);
+    } else setAccuracy(correct / trueLabels.length);
   };
 
   useEffect(() => {
@@ -46,6 +66,7 @@ function App() {
           getSpectro();
           setTrueLabel(procJson.true_labels[sampleIdx]);
           setPredLabel(procJson.pred_labels[sampleIdx]);
+          calcAccuracy(sampleIdx);
         }
         if (time * 160 + 160 < procJson.epochs_transformed[0][0].length) {
           setCSPWin(
@@ -120,10 +141,17 @@ function App() {
 
   return (
     <div className="App">
+      <h1> Enerspike Demo ⚡️ </h1>
       {procJson ? (
         <div>
-          <h1>True Label: {trueLabel === 0 ? "hands" : "feet"}</h1>
-          <h1>Predicted Label: {predLabel === 0 ? "hands" : "feet"}</h1>
+          <h2>
+            True Label: {trueLabel === 0 ? "hands" : trueLabel ? "feet" : null}
+          </h2>
+          <h2>
+            Predicted Label:{" "}
+            {predLabel === 0 ? "hands" : predLabel ? "feet" : null}
+          </h2>
+          <h2>Accuracy: {accuracy}</h2>
           <EEGGraph data={CSPWin} />
           {spectroImg ? (
             <div>

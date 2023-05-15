@@ -4,29 +4,10 @@ import json
 from helpers import *
 import os 
 import tempfile
-import pickle 
-import tensorflow.keras as keras
-import tensorflow as tf
-from keras.models import Sequential
-from keras.layers import Dense, LSTM, BatchNormalization, Dropout
-from keras_lmu import LMU
 
 app = Flask(__name__)
 CORS(app)
 app.secret_key = os.urandom(24)
-
-with open('/Users/anushmutyala/Documents/GitHub/Energy-Efficient-Decoding-of-EEG-Motor-Imagery-using-Spiking-Legendre-Memory-Units/ml/preprocessed_data/scaler.pkl','rb') as f:
-    sc = pickle.load(f)
-
-keras_lmu = keras.models.load_model('/Users/anushmutyala/Documents/GitHub/Energy-Efficient-Decoding-of-EEG-Motor-Imagery-using-Spiking-Legendre-Memory-Units/ml/models/keras-lmu')
-
-def inference(data, freqs):
-    data = data[:, :, np.logical_and(freqs >= 8, freqs <= 30), :]
-    data = np.moveaxis(data.reshape(data.shape[0], -1, data.shape[-1]), 2, 1)
-    normed_data = sc.transform(data.reshape((data.shape[0]*data.shape[1],data.shape[2]))).reshape((data.shape[0],data.shape[1],data.shape[2]))
-    y_pred = keras_lmu.predict(normed_data)
-    y_pred = (y_pred>0.5).astype(int)
-    return y_pred
 
 # @app.before_first_request
 # def startup():

@@ -7,7 +7,6 @@ import {
   CartesianGrid,
   Line,
   Legend,
-  ResponsiveContainer,
 } from "recharts";
 
 function EEGGraph({ data }) {
@@ -42,7 +41,7 @@ function EEGGraph({ data }) {
     for (let i = 0; i < arr[0].length; i++) {
       let dataPoint = { ts: i };
       for (let ch = 0; ch < arr.length; ch++) {
-        dataPoint[`ch${ch + 1}`] = data[ch][i];
+        dataPoint[`csp filter ${ch + 1}`] = data[ch][i];
       }
       formattedData.push(dataPoint);
     }
@@ -81,9 +80,9 @@ function EEGGraph({ data }) {
         <Legend />
         {channels.current.map((channel) => (
           <Line
-            key={`ch${channel}`}
+            key={`csp filter ${channel}`}
             type="monotone"
-            dataKey={`ch${channel}`}
+            dataKey={`csp filter ${channel}`}
             stroke={channelColors.current[channel - 1]}
             activeDot={false}
             dot={false}
