@@ -10,6 +10,7 @@ import tempfile
 import scipy.signal as signal
 import io, base64, os
 import matplotlib.pyplot as plt
+plt.switch_backend('Agg') 
 
 csp_filters = np.load('/Users/anushmutyala/Documents/GitHub/Energy-Efficient-Decoding-of-EEG-Motor-Imagery-using-Spiking-Legendre-Memory-Units/ml/preprocessed_data/csp_filters.npy')
 
@@ -35,10 +36,8 @@ def preprocess(file):
         epochs = Epochs(raw, events, event_id, tmin, tmax, proj=True, picks=picks,
                         baseline=None, preload=True)
         labels = epochs.events[:, -1] - 2
-        epochs_data = epochs.get_data()
-        global fs
         fs = raw.info['sfreq']
-    return epochs_data, labels 
+    return epochs, labels, fs 
 
 def csp_transform(epochs_data, filter_len=4):
     return np.dot(csp_filters.T[:4], epochs_data)
@@ -46,10 +45,8 @@ def csp_transform(epochs_data, filter_len=4):
 # def csp_timeseries_plot(epochs_transformed):
 
 #     return
-def init_params(data):
+def init_params(data, fs):
     # init params
-    global M
-    global S
     N = len(data[0][0]) # length of the signal
     fmin = 2
     fmax = 30
@@ -61,16 +58,25 @@ def init_params(data):
     print('overlap' , (1 - S/M))
     K = (N-M)//S + 1 # number of segments
     print('number of segments', K)
+    return M, S, K
 
 def spectro_gen(source_stft):
+    # restrict spectrogram to 8-30 Hz
+    nf = f[(f >= 8) & (f <= 30)]
+    source_stft = source_stft[(f >= 8) & (f <= 30), :]
     plt.figure(figsize=(10, 5))
-    plt.pcolormesh(t, f, source_stft[0, 0, :, :], cmap='jet')
+    plt.title('STFT Magnitude, 1 second interval, 50% Overlap')
+    plt.pcolormesh(t, nf, source_stft, cmap='jet')
     plt.ylabel('Frequency [Hz]')
     plt.xlabel('Time [sec]')
     plt.colorbar()
-    return
+    img = io.BytesIO()
+    plt.savefig(img, format='png')
+    img.seek(0)
+    plot_url = base64.b64encode(img.getvalue()).decode()
+    return plot_url
 
-def spectro_data(epochs_transformed):
+def spectro_data(epochs_transformed, fs, M, S):
     source_stft = []
     global f, t
     for epoch in epochs_transformed:
@@ -87,5 +93,6 @@ def spectro_data(epochs_transformed):
         source_stft.append(norm_Sxx)
 
     source_stft = np.array(source_stft)
-    print(source_stft.shape)
+    # print(source_stft.shape)
+    return source_stft, f, t
 

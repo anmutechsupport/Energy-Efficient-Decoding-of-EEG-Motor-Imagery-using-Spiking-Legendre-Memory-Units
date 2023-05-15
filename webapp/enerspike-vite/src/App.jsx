@@ -8,9 +8,24 @@ function App() {
   const [procJson, setJson] = useState(null);
   const [play, setPlay] = useState(false);
   const [sampleIdx, setSampleIdx] = useState(0);
-
+  const [spectroImg, setSpectroImg] = useState(null);
+  const [trueLabel, setTrueLabel] = useState(null);
+  const [predLabel, setPredLabel] = useState(null);
   const [CSPWin, setCSPWin] = useState(null);
   const formRef = useRef(null);
+
+  const getSpectro = async () => {
+    // make a post request that asks for the spectrogram of the current sample
+    // and set the spectrogram to the response
+    // post a json
+    const data = {
+      sampleIdx: sampleIdx,
+    };
+    const response = await axios.post("http://127.0.0.1:5000/spectro", data);
+    console.log(response);
+    setSpectroImg(response.data);
+    return "pass";
+  };
 
   useEffect(() => {
     if (!procJson) return;
@@ -27,6 +42,11 @@ function App() {
 
         // const nextData = procJson.shift(); // remove the first item from procJson
         // setCSPWin((currentCSPWin) => [...currentCSPWin, nextData]); // append it to CSPWin
+        if (time == 0) {
+          getSpectro();
+          setTrueLabel(procJson.true_labels[sampleIdx]);
+          setPredLabel(procJson.pred_labels[sampleIdx]);
+        }
         if (time * 160 + 160 < procJson.epochs_transformed[0][0].length) {
           setCSPWin(
             procJson.epochs_transformed[sampleIdx].map((x) =>
@@ -36,15 +56,16 @@ function App() {
           console.log(time);
           time++;
         } else {
-          time = 0;
+          // time = 0;
+          // getSpectro();
           setSampleIdx((sampleIdx) => sampleIdx + 1);
-          setCSPWin(
-            procJson.epochs_transformed[sampleIdx].map((x) =>
-              x.slice(time * 160, time * 160 + 160)
-            )
-          );
-          console.log(time);
-          time++;
+          // setCSPWin(
+          //   procJson.epochs_transformed[sampleIdx].map((x) =>
+          //     x.slice(time * 160, time * 160 + 160)
+          //   )
+          // );
+          // console.log(time);
+          // time++;
         }
       }, 1000);
     } else {
@@ -88,7 +109,7 @@ function App() {
 
     console.log(response);
     setJson(response.data);
-    return;
+    return "pass";
   };
 
   useEffect(() => {
@@ -97,15 +118,18 @@ function App() {
     }
   }, [selectedFile]);
 
-  // useEffect(() =>  {
-
-  // }, [timeChange])
-
   return (
     <div className="App">
       {procJson ? (
         <div>
+          <h1>True Label: {trueLabel === 0 ? "hands" : "feet"}</h1>
+          <h1>Predicted Label: {predLabel === 0 ? "hands" : "feet"}</h1>
           <EEGGraph data={CSPWin} />
+          {spectroImg ? (
+            <div>
+              <img src={`data:image/png;base64,${spectroImg}`} />
+            </div>
+          ) : null}
           <button
             onClick={() => {
               setPlay(!play);
