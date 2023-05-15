@@ -6,11 +6,12 @@ from helpers import *
 app = Flask(__name__)
 CORS(app)
 
-@app.before_first_request
-def startup():
-    global raw_bytes 
-    global epochs_data
-    global epochs_transformed
+# @app.before_first_request
+# def startup():
+#     # global raw_bytes 
+#     # global epochs_data
+#     # global epochs_transformed
+#     return
 
 @app.route('/process', methods=['POST'])
 def process():
@@ -24,9 +25,15 @@ def process():
     # predictions = make_prediction(data)
     print(epochs_data.shape)
     print(labels.shape)
+    merged_epochs = np.moveaxis(epochs_data, 1, 0).reshape(epochs_data.shape[1], -1)
+    print(merged_epochs.shape)
+    transformed_epochs = np.array([csp_transform(epoch) for epoch in epochs_data])
+    print(transformed_epochs.shape)
+    init_params(epochs_data)
     
     response = {
-        'epochs_data': epochs_data.tolist(),
+        'epochs_data': merged_epochs.tolist(),
+        'epochs_transformed': transformed_epochs.tolist()[:2],
         'labels': labels.tolist(),
     }
     
