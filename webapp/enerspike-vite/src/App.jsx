@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import "./App.css";
 import EEGGraph from "./components/EEGGraph";
+import PSDGraph from "./components/PSDGraph";
 import axios from "axios";
 
 function App() {
@@ -9,6 +10,7 @@ function App() {
   const [play, setPlay] = useState(false);
   const [sampleIdx, setSampleIdx] = useState(0);
   const [spectroImg, setSpectroImg] = useState(null);
+  const [PSDWin, setPSDWin] = useState(null);
   const [trueLabel, setTrueLabel] = useState(null);
   const [predLabel, setPredLabel] = useState(null);
   const [CSPWin, setCSPWin] = useState(null);
@@ -68,12 +70,24 @@ function App() {
           setPredLabel(procJson.pred_labels[sampleIdx]);
           calcAccuracy(sampleIdx);
         }
-        if (time * 160 + 160 < procJson.epochs_transformed[0][0].length) {
+        if (time * 80 + 160 < procJson.epochs_transformed[0][0].length) {
           setCSPWin(
             procJson.epochs_transformed[sampleIdx].map((x) =>
-              x.slice(time * 160, time * 160 + 160)
+              x.slice(time * 80, time * 80 + 160)
             )
           );
+          const newPSDWin = [[], [], [], []];
+          // get sampleIdx stft_data from procJson and loop through each channel and each frequency bin and pull the value from time index
+          for (let ch = 0; ch < procJson.stft_data[sampleIdx].length; ch++) {
+            for (
+              let freq = 0;
+              freq < procJson.stft_data[sampleIdx][0].length;
+              freq++
+            ) {
+              newPSDWin[ch].push(procJson.stft_data[sampleIdx][ch][freq][time]);
+            }
+          }
+          setPSDWin(newPSDWin);
           console.log(time);
           time++;
         } else {
@@ -88,7 +102,7 @@ function App() {
           // console.log(time);
           // time++;
         }
-      }, 1000);
+      }, 500);
     } else {
       if (playbackInterval) clearInterval(playbackInterval);
       if (play) setPlay(false);
@@ -153,6 +167,7 @@ function App() {
           </h2>
           <h2>Accuracy: {accuracy}</h2>
           <EEGGraph data={CSPWin} />
+          <PSDGraph data={PSDWin} />
           {spectroImg ? (
             <div>
               <img src={`data:image/png;base64,${spectroImg}`} />
